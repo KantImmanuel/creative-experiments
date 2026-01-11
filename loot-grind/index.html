@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loot Grind - Idle ARPG</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Courier+Prime&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier Prime', monospace;
+            background: #0a0a0a;
+            color: #c0b090;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            grid-template-rows: auto 1fr;
+            gap: 1px;
+            background: #1a1510;
+            min-height: 100vh;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            grid-column: 1 / -1;
+            background: linear-gradient(180deg, #1a1510 0%, #0a0a08 100%);
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #2a2520;
+        }
+
+        .game-title {
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            color: #d4af37;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+            letter-spacing: 4px;
+        }
+
+        .player-stats {
+            display: flex;
+            gap: 30px;
+            font-size: 12px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #666;
+            text-transform: uppercase;
+            font-size: 9px;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            color: #fff;
+        }
+
+        .stat-value.gold { color: #ffd700; }
+        .stat-value.level { color: #4a9eff; }
+
+        /* Left Panel - Character & Zones */
+        .left-panel {
+            background: #0d0d0a;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel-section {
+            background: #111110;
+            border: 1px solid #2a2520;
+            border-radius: 4px;
+            padding: 12px;
+        }
+
+        .section-title {
+            font-family: 'Cinzel', serif;
+            font-size: 11px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #222;
+        }
+
+        /* Character Stats */
+        .char-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+        }
+
+        .char-stat-name { color: #888; }
+        .char-stat-value { color: #c0b090; }
+
+        /* Zone Selection */
+        .zone {
+            background: #0a0a08;
+            border: 1px solid #222;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .zone:hover {
+            border-color: #444;
+            background: #151510;
+        }
+
+        .zone.active {
+            border-color: #8b0000;
+            box-shadow: 0 0 10px rgba(139, 0, 0, 0.3);
+        }
+
+        .zone.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .zone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .zone-name {
+            font-size: 13px;
+            color: #c0b090;
+        }
+
+        .zone-level {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .zone-desc {
+            font-size: 10px;
+            color: #555;
+        }
+
+        .zone-drops {
+            margin-top: 6px;
+            display: flex;
+            gap: 4px;
+        }
+
+        .drop-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+        }
+
+        /* Center - Main View */
+        .center-panel {
+            background: #0a0a08;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .farming-view {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .zone-display {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .current-zone {
+            font-family: 'Cinzel', serif;
+            font-size: 28px;
+            color: #c0b090;
+            margin-bottom: 5px;
+        }
+
+        .zone-subtitle {
+            font-size: 11px;
+            color: #555;
+            letter-spacing: 2px;
+        }
+
+        /* Kill Counter */
+        .kill-display {
+            background: #111;
+            border: 1px solid #2a2520;
+            border-radius: 8px;
+            padding: 25px 50px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .kills-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .kills-value {
+            font-size: 48px;
+            color: #8b0000;
+            font-family: 'Cinzel', serif;
+            text-shadow: 0 0 30px rgba(139, 0, 0, 0.5);
+        }
+
+        .kills-rate {
+            font-size: 11px;
+            color: #555;
+            margin-top: 5px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #8b0000, #a00);
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
+        }
+
+        /* Loot Drop Animation Area */
+        .loot-drops {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .loot-drop {
+            position: absolute;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+            animation: dropFloat 2s ease-out forwards;
+            white-space: nowrap;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        @keyframes dropFloat {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            70% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-60px) scale(0.8);
+            }
+        }
+
+        .loot-drop.normal { background: #333; color: #aaa; }
+        .loot-drop.magic { background: #00008b; color: #6666ff; }
+        .loot-drop.rare { background: #8b8b00; color: #ffff00; }
+        .loot-drop.unique { background: #8b4000; color: #ffa500; text-shadow: 0 0 10px rgba(255, 165, 0, 0.5); }
+        .loot-drop.rune { background: #4a0080; color: #bf80ff; text-shadow: 0 0 10px rgba(191, 128, 255, 0.5); }
+
+        /* Right Panel - Inventory & Loot */
+        .right-panel {
+            background: #0d0d0a;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 8px;
+            background: #111;
+            border: 1px solid #222;
+            color: #666;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .tab:hover { border-color: #444; color: #888; }
+        .tab.active {
+            border-color: #8b0000;
+            color: #c0b090;
+            background: #1a1510;
+        }
+
+        /* Inventory Grid */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 4px;
+        }
+
+        .inv-slot {
+            aspect-ratio: 1;
+            background: #0a0a08;
+            border: 1px solid #222;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .inv-slot:hover { border-color: #444; }
+        .inv-slot.has-item { border-color: #333; }
+
+        .inv-slot.normal { border-color: #444; }
+        .inv-slot.magic { border-color: #4444aa; box-shadow: inset 0 0 10px rgba(68, 68, 170, 0.3); }
+        .inv-slot.rare { border-color: #aaaa44; box-shadow: inset 0 0 10px rgba(170, 170, 68, 0.3); }
+        .inv-slot.unique { border-color: #aa7744; box-shadow: inset 0 0 15px rgba(170, 119, 68, 0.4); }
+        .inv-slot.rune { border-color: #8844aa; box-shadow: inset 0 0 15px rgba(136, 68, 170, 0.4); }
+
+        .item-icon {
+            font-size: 20px;
+        }
+
+        /* Recent Drops List */
+        .recent-drops {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .drop-item {
+            padding: 8px;
+            border-bottom: 1px solid #1a1a18;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .drop-item:hover { background: #151510; }
+
+        .drop-item-name {
+            font-size: 12px;
+            margin-bottom: 3px;
+        }
+
+        .drop-item-name.normal { color: #888; }
+        .drop-item-name.magic { color: #6666ff; }
+        .drop-item-name.rare { color: #ffff00; }
+        .drop-item-name.unique { color: #ffa500; }
+        .drop-item-name.rune { color: #bf80ff; }
+
+        .drop-item-stats {
+            font-size: 10px;
+            color: #555;
+        }
+
+        /* Equipped Items */
+        .equipment-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .equip-slot {
+            aspect-ratio: 1;
+            background: #0a0a08;
+            border: 1px solid #333;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .equip-slot:hover { border-color: #555; }
+
+        .equip-slot-label {
+            font-size: 8px;
+            color: #444;
+            text-transform: uppercase;
+            margin-top: 4px;
+        }
+
+        .equip-slot-icon {
+            font-size: 24px;
+            opacity: 0.3;
+        }
+
+        .equip-slot.equipped .equip-slot-icon {
+            opacity: 1;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            position: fixed;
+            background: #1a1510;
+            border: 1px solid #444;
+            padding: 12px;
+            border-radius: 4px;
+            max-width: 280px;
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .tooltip-name {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .tooltip-type {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .tooltip-stat {
+            font-size: 11px;
+            color: #4488ff;
+            padding: 2px 0;
+        }
+
+        .tooltip-flavor {
+            font-size: 10px;
+            color: #8b4000;
+            font-style: italic;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #333;
+        }
+
+        /* MF Display */
+        .mf-display {
+            background: linear-gradient(135deg, #1a1510 0%, #0d0d0a 100%);
+            border: 1px solid #d4af37;
+            border-radius: 4px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .mf-label {
+            font-size: 9px;
+            color: #d4af37;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .mf-value {
+            font-size: 28px;
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+        }
+
+        /* Rune Collection */
+        .rune-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+        }
+
+        .rune-slot {
+            aspect-ratio: 1;
+            background: #0a0a08;
+            border: 1px solid #222;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #333;
+            cursor: help;
+        }
+
+        .rune-slot.collected {
+            border-color: #8844aa;
+            color: #bf80ff;
+            background: rgba(136, 68, 170, 0.1);
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 10px;
+            background: #111;
+            border: 1px solid #333;
+            color: #888;
+            font-family: inherit;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: #1a1a18;
+            border-color: #555;
+            color: #c0b090;
+        }
+
+        .control-btn.danger {
+            border-color: #440000;
+            color: #8b0000;
+        }
+
+        .control-btn.danger:hover {
+            background: #1a0000;
+            border-color: #8b0000;
+        }
+
+        /* Offline Gains Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: #1a1510;
+            border: 1px solid #d4af37;
+            border-radius: 8px;
+            padding: 30px;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-title {
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            color: #d4af37;
+            margin-bottom: 10px;
+        }
+
+        .modal-subtitle {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .offline-loot {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .modal-btn {
+            padding: 12px 30px;
+            background: #8b0000;
+            border: none;
+            color: #fff;
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .modal-btn:hover {
+            background: #a00;
+            box-shadow: 0 0 20px rgba(139, 0, 0, 0.5);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a08; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+            .left-panel, .right-panel {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="game-title">LOOT GRIND</div>
+            <div class="player-stats">
+                <div class="stat">
+                    <div class="stat-label">Level</div>
+                    <div class="stat-value level" id="playerLevel">1</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Experience</div>
+                    <div class="stat-value" id="playerXP">0</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Gold</div>
+                    <div class="stat-value gold" id="playerGold">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="left-panel">
+            <div class="panel-section">
+                <div class="section-title">Character</div>
+                <div class="char-stat">
+                    <span class="char-stat-name">Damage</span>
+                    <span class="char-stat-value" id="statDamage">10-15</span>
+                </div>
+                <div class="char-stat">
+                    <span class="char-stat-name">Attack Speed</span>
+                    <span class="char-stat-value" id="statSpeed">1.0/s</span>
+                </div>
+                <div class="char-stat">
+                    <span class="char-stat-name">Magic Find</span>
+                    <span class="char-stat-value" id="statMF">0%</span>
+                </div>
+                <div class="char-stat">
+                    <span class="char-stat-name">Gold Find</span>
+                    <span class="char-stat-value" id="statGF">0%</span>
+                </div>
+            </div>
+
+            <div class="panel-section" style="flex: 1; overflow-y: auto;">
+                <div class="section-title">Zones</div>
+                <div id="zoneList"></div>
+            </div>
+        </div>
+
+        <div class="center-panel">
+            <div class="farming-view">
+                <div class="loot-drops" id="lootDrops"></div>
+
+                <div class="zone-display">
+                    <div class="current-zone" id="currentZone">The Blood Moor</div>
+                    <div class="zone-subtitle" id="zoneSubtitle">Monster Level 1</div>
+                </div>
+
+                <div class="kill-display">
+                    <div class="kills-label">Monsters Slain</div>
+                    <div class="kills-value" id="killCount">0</div>
+                    <div class="kills-rate" id="killRate">0 kills/sec</div>
+                </div>
+
+                <div class="progress-container">
+                    <div class="progress-label">
+                        <span id="monsterName">Zombie</span>
+                        <span id="monsterHP">100/100</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="monsterProgress" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="mf-display">
+                <div class="mf-label">Magic Find</div>
+                <div class="mf-value" id="mfDisplay">0%</div>
+            </div>
+
+            <div class="tabs">
+                <div class="tab active" data-tab="inventory">Inventory</div>
+                <div class="tab" data-tab="equipment">Gear</div>
+                <div class="tab" data-tab="runes">Runes</div>
+            </div>
+
+            <div class="panel-section" id="inventoryTab" style="flex: 1; overflow-y: auto;">
+                <div class="section-title">Inventory (<span id="invCount">0</span>/50)</div>
+                <div class="inventory-grid" id="inventoryGrid"></div>
+            </div>
+
+            <div class="panel-section" id="equipmentTab" style="flex: 1; display: none;">
+                <div class="section-title">Equipment</div>
+                <div class="equipment-grid" id="equipmentGrid"></div>
+            </div>
+
+            <div class="panel-section" id="runesTab" style="flex: 1; display: none;">
+                <div class="section-title">Rune Collection</div>
+                <div class="rune-grid" id="runeGrid"></div>
+            </div>
+
+            <div class="panel-section">
+                <div class="section-title">Recent Drops</div>
+                <div class="recent-drops" id="recentDrops"></div>
+            </div>
+
+            <div class="controls">
+                <button class="control-btn" id="sellJunkBtn">Sell Junk</button>
+                <button class="control-btn danger" id="resetBtn">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <div class="modal-overlay" id="offlineModal">
+        <div class="modal">
+            <div class="modal-title">Welcome Back!</div>
+            <div class="modal-subtitle">While you were away...</div>
+            <div id="offlineSummary"></div>
+            <div class="offline-loot" id="offlineLoot"></div>
+            <button class="modal-btn" id="claimOffline">Claim Rewards</button>
+        </div>
+    </div>
+
+    <script src="loot.js"></script>
+</body>
+</html>
