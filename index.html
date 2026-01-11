@@ -137,6 +137,28 @@
             background: linear-gradient(135deg, #3a5a3a 0%, #5a7a5a 100%);
         }
 
+        .preview-echo {
+            background: linear-gradient(135deg, #1a1a3a 0%, #2a2a5a 50%, #1a2a4a 100%);
+        }
+
+        .project-card.featured {
+            grid-column: span 2;
+            border-color: rgba(150, 150, 255, 0.2);
+        }
+
+        .project-card.featured .project-preview {
+            height: 250px;
+        }
+
+        @media (max-width: 768px) {
+            .project-card.featured {
+                grid-column: span 1;
+            }
+            .project-card.featured .project-preview {
+                height: 200px;
+            }
+        }
+
         .project-info {
             padding: 25px 30px 30px;
         }
@@ -322,6 +344,24 @@
                         <span class="tag">Game</span>
                         <span class="tag">Collection</span>
                         <span class="tag">Cozy</span>
+                    </div>
+                </div>
+            </a>
+
+            <a href="./echo-verse/index.html" class="project-card featured">
+                <div class="project-preview preview-echo">
+                    <div class="project-preview-bg">🌌</div>
+                </div>
+                <div class="project-info">
+                    <h2 class="project-title">Echo Verse</h2>
+                    <p class="project-description">
+                        A musical universe explorer combining procedural terrain, ambient synthesis, particles, and artifact discovery.
+                    </p>
+                    <div class="project-tags">
+                        <span class="tag">Combined</span>
+                        <span class="tag">Audio</span>
+                        <span class="tag">Exploration</span>
+                        <span class="tag">Discovery</span>
                     </div>
                 </div>
             </a>
