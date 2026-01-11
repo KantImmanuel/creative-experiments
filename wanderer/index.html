@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wanderer - Infinite Terrain</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        canvas {
+            display: block;
+        }
+        .ui {
+            position: fixed;
+            color: rgba(255,255,255,0.6);
+            font-size: 11px;
+            letter-spacing: 1px;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .title {
+            top: 20px;
+            left: 20px;
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.4;
+        }
+        .coords {
+            bottom: 20px;
+            left: 20px;
+            font-family: monospace;
+            opacity: 0.3;
+        }
+        .time-display {
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            opacity: 0.4;
+        }
+        .weather {
+            top: 40px;
+            right: 20px;
+            opacity: 0.3;
+            font-size: 10px;
+        }
+        .controls {
+            bottom: 20px;
+            right: 20px;
+            text-align: right;
+            opacity: 0.25;
+            font-size: 10px;
+            line-height: 1.8;
+        }
+        .biome {
+            bottom: 40px;
+            left: 20px;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="ui title">Wanderer</div>
+    <div class="ui coords" id="coords">0, 0</div>
+    <div class="ui biome" id="biome">Plains</div>
+    <div class="ui time-display" id="timeDisplay">12:00</div>
+    <div class="ui weather" id="weather">Clear</div>
+    <div class="ui controls">
+        WASD / Arrows - Move<br>
+        T - Toggle time<br>
+        R - Toggle rain<br>
+        F - Toggle fog
+    </div>
+    <script src="wanderer.js"></script>
+</body>
+</html>
