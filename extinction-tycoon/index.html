@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mass Extinction Tycoon</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .game-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 280px 1fr 300px;
+            gap: 20px;
+            min-height: 100vh;
+        }
+
+        /* Left Panel - Extinction Tools */
+        .tools-panel {
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .extinction-tool {
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .extinction-tool:hover {
+            border-color: #444;
+            background: #222;
+        }
+
+        .extinction-tool.locked {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .extinction-tool.active {
+            border-color: #ff4444;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.2);
+        }
+
+        .tool-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .tool-name {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .tool-icon {
+            font-size: 20px;
+        }
+
+        .tool-desc {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .tool-stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #666;
+        }
+
+        .tool-cost {
+            color: #ffaa00;
+        }
+
+        .tool-power {
+            color: #ff4444;
+        }
+
+        /* Center - Earth View */
+        .earth-panel {
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .earth-header {
+            padding: 15px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .era-display {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .year-display {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .earth-view {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            min-height: 500px;
+        }
+
+        #earthCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        .earth-footer {
+            padding: 15px;
+            border-top: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .biodiversity-bar {
+            flex: 1;
+            height: 20px;
+            background: #1a1a1a;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-right: 15px;
+        }
+
+        .biodiversity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ffaa00, #44ff44);
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .biodiversity-text {
+            font-size: 12px;
+            white-space: nowrap;
+        }
+
+        /* Right Panel - Stats & Species */
+        .stats-panel {
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .resource-display {
+            background: #1a1a1a;
+            border-radius: 6px;
+            padding: 12px;
+        }
+
+        .resource-label {
+            font-size: 10px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .resource-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffaa00;
+        }
+
+        .resource-rate {
+            font-size: 11px;
+            color: #44aa44;
+        }
+
+        .species-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .species-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #1a1a1a;
+            transition: all 0.3s ease;
+        }
+
+        .species-item.extinct {
+            opacity: 0.3;
+            text-decoration: line-through;
+        }
+
+        .species-item.endangered {
+            background: rgba(255, 68, 68, 0.1);
+        }
+
+        .species-icon {
+            font-size: 20px;
+            margin-right: 10px;
+            width: 30px;
+            text-align: center;
+        }
+
+        .species-info {
+            flex: 1;
+        }
+
+        .species-name {
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .species-pop {
+            font-size: 10px;
+            color: #666;
+        }
+
+        .species-bar {
+            width: 60px;
+            height: 6px;
+            background: #1a1a1a;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .species-bar-fill {
+            height: 100%;
+            background: #44ff44;
+            transition: width 0.3s ease;
+        }
+
+        .species-bar-fill.low {
+            background: #ffaa00;
+        }
+
+        .species-bar-fill.critical {
+            background: #ff4444;
+        }
+
+        /* Stats Section */
+        .kill-counter {
+            background: #1a0a0a;
+            border: 1px solid #331111;
+            border-radius: 6px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .kill-label {
+            font-size: 10px;
+            color: #ff4444;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .kill-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ff4444;
+            text-shadow: 0 0 20px rgba(255, 68, 68, 0.5);
+        }
+
+        .kill-species {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Achievements */
+        .achievements {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .achievement {
+            width: 30px;
+            height: 30px;
+            background: #1a1a1a;
+            border: 1px solid #2a2a2a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            opacity: 0.3;
+            cursor: help;
+        }
+
+        .achievement.unlocked {
+            opacity: 1;
+            border-color: #ffaa00;
+            background: #1a1500;
+        }
+
+        /* Control Buttons */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .control-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #2a2a2a;
+            background: #1a1a1a;
+            color: #aaa;
+            font-family: inherit;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .control-btn:hover {
+            background: #222;
+            border-color: #444;
+            color: #fff;
+        }
+
+        .control-btn.danger {
+            border-color: #441111;
+            color: #ff4444;
+        }
+
+        .control-btn.danger:hover {
+            background: #220000;
+            border-color: #ff4444;
+        }
+
+        /* Event Log */
+        .event-log {
+            background: #0a0a0a;
+            border: 1px solid #1a1a1a;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-size: 10px;
+        }
+
+        .event {
+            padding: 3px 0;
+            border-bottom: 1px solid #111;
+            color: #666;
+        }
+
+        .event.death {
+            color: #ff4444;
+        }
+
+        .event.extinction {
+            color: #ff0000;
+            font-weight: bold;
+        }
+
+        .event.achievement {
+            color: #ffaa00;
+        }
+
+        /* Tooltips */
+        .tooltip {
+            position: fixed;
+            background: #222;
+            border: 1px solid #444;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            max-width: 200px;
+            z-index: 1000;
+            pointer-events: none;
+            display: none;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .game-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        /* Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .shaking {
+            animation: shake 0.1s infinite;
+        }
+
+        @keyframes pulse-red {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 0, 0, 0.8); }
+        }
+
+        .pulsing {
+            animation: pulse-red 0.5s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Left Panel - Extinction Tools -->
+        <div class="tools-panel">
+            <div class="panel-title">Extinction Arsenal</div>
+            <div id="toolsList"></div>
+
+            <div class="panel-title" style="margin-top: 20px;">Upgrades</div>
+            <div id="upgradesList"></div>
+        </div>
+
+        <!-- Center - Earth View -->
+        <div class="earth-panel">
+            <div class="earth-header">
+                <div>
+                    <div class="era-display" id="eraDisplay">Cambrian Period</div>
+                    <div class="year-display" id="yearDisplay">538 Million Years Ago</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 12px; color: #666;">Time Speed</div>
+                    <div id="timeSpeed" style="font-size: 14px;">1x</div>
+                </div>
+            </div>
+
+            <div class="earth-view">
+                <canvas id="earthCanvas"></canvas>
+            </div>
+
+            <div class="earth-footer">
+                <div class="biodiversity-bar">
+                    <div class="biodiversity-fill" id="biodiversityFill" style="width: 100%"></div>
+                </div>
+                <div class="biodiversity-text">
+                    <span id="biodiversityPercent">100</span>% Biodiversity
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Stats -->
+        <div class="stats-panel">
+            <div class="resource-display">
+                <div class="resource-label">Extinction Points</div>
+                <div class="resource-value" id="extinctionPoints">0</div>
+                <div class="resource-rate" id="pointsRate">+0/sec</div>
+            </div>
+
+            <div class="kill-counter">
+                <div class="kill-label">Total Casualties</div>
+                <div class="kill-value" id="killCount">0</div>
+                <div class="kill-species"><span id="speciesExtinct">0</span> species extinct</div>
+            </div>
+
+            <div class="panel-title">Endangered Species</div>
+            <div class="species-list" id="speciesList"></div>
+
+            <div class="panel-title">Event Log</div>
+            <div class="event-log" id="eventLog"></div>
+
+            <div class="panel-title">Achievements</div>
+            <div class="achievements" id="achievements"></div>
+
+            <div class="controls">
+                <button class="control-btn" id="pauseBtn">Pause</button>
+                <button class="control-btn danger" id="resetBtn">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script src="extinction.js"></script>
+</body>
+</html>
