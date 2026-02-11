@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UpSpyDown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a1a1a;--card:rgba(16,32,30,0.75);--card-border:rgba(255,255,255,0.06);
+  --green:#00e676;--green-dim:#00c853;--red:#ff1744;--red-dim:#d50000;
+  --text:#e8f5e9;--text-secondary:rgba(232,245,233,0.5);--text-muted:rgba(232,245,233,0.3);
+}
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);overflow-x:hidden}
+body{display:flex;flex-direction:column;align-items:center;min-height:100vh}
+.app{width:390px;min-height:844px;position:relative;overflow:hidden;padding:0 20px 20px;display:flex;flex-direction:column}
+
+/* Ambient glow */
+.glow{position:fixed;top:-120px;left:50%;transform:translateX(-50%);width:500px;height:500px;border-radius:50%;filter:blur(120px);opacity:0.25;pointer-events:none;transition:background 1s ease,opacity 1s ease;z-index:0}
+.glow.green{background:radial-gradient(circle,#00e676,transparent 70%)}
+.glow.red{background:radial-gradient(circle,#ff1744,transparent 70%)}
+.glow.dim{opacity:0.1}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:center;padding:54px 0 16px;position:relative;z-index:1}
+.logo{font-size:20px;font-weight:800;letter-spacing:-0.5px}
+.logo span{color:var(--green)}
+.logo .down{color:var(--red)}
+.balance-pill{background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid var(--card-border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px}
+.balance-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+/* Status badge */
+.status-badge{text-align:center;padding:8px 0 12px;position:relative;z-index:1}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:0.3px;text-transform:uppercase;backdrop-filter:blur(10px);transition:all 0.5s ease}
+.badge.live{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.2)}
+.badge.live .pulse{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+.badge.settling{background:rgba(255,193,7,0.12);color:#ffc107;border:1px solid rgba(255,193,7,0.2)}
+.badge.settling .spinner{width:12px;height:12px;border:2px solid rgba(255,193,7,0.3);border-top-color:#ffc107;border-radius:50%;animation:spin 1s linear infinite}
+.badge.result-green{background:rgba(0,230,118,0.12);color:var(--green);border:1px solid rgba(0,230,118,0.2)}
+.badge.result-red{background:rgba(255,23,68,0.12);color:var(--red);border:1px solid rgba(255,23,68,0.2)}
+.badge.pre{background:rgba(255,255,255,0.06);color:var(--text-secondary);border:1px solid var(--card-border)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.8)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Chart card */
+.chart-card{background:var(--card);backdrop-filter:blur(24px);border:1px solid var(--card-border);border-radius:20px;padding:20px 16px 16px;margin:4px 0 12px;position:relative;z-index:1;overflow:hidden;transition:box-shadow 1s ease}
+.chart-card.glow-green{box-shadow:0 0 60px -20px rgba(0,230,118,0.15),inset 0 1px 0 rgba(255,255,255,0.05)}
+.chart-card.glow-red{box-shadow:0 0 60px -20px rgba(255,23,68,0.15),inset 0 1px 0 rgba(255,255,255,0.05)}
+.chart-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px}
+.chart-symbol{font-size:14px;font-weight:700;letter-spacing:0.5px;color:var(--text-secondary)}
+.chart-price{font-size:28px;font-weight:800;letter-spacing:-1px;margin-top:2px}
+.chart-change{font-size:13px;font-weight:600;margin-top:2px}
+.chart-change.up{color:var(--green)}
+.chart-change.down{color:var(--red)}
+.chart-timeframe{display:flex;gap:4px}
+.chart-timeframe span{font-size:11px;padding:4px 10px;border-radius:8px;color:var(--text-muted);cursor:pointer}
+.chart-timeframe span.active{background:rgba(255,255,255,0.08);color:var(--text-secondary)}
+canvas#chart{width:100%;height:160px;display:block;margin-top:4px}
+
+/* Info text */
+.info-section{text-align:center;padding:4px 0 8px;position:relative;z-index:1}
+.info-text{font-size:14px;color:var(--text-secondary);font-weight:500}
+.info-text strong{color:var(--text);font-weight:700}
+.info-sub{font-size:12px;color:var(--text-muted);margin-top:4px;font-weight:500}
+
+/* Countdown */
+.countdown{text-align:center;margin:6px 0;position:relative;z-index:1}
+.countdown-text{font-size:24px;font-weight:800;letter-spacing:-0.5px;color:var(--text)}
+.countdown-label{font-size:11px;color:var(--text-muted);margin-top:2px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+
+/* Buttons */
+.bet-buttons{display:flex;gap:12px;padding:8px 0;position:relative;z-index:1}
+.bet-btn{flex:1;padding:18px 0;border:none;border-radius:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:0.3px;transition:all 0.3s ease;position:relative;overflow:hidden}
+.bet-btn.up{background:linear-gradient(135deg,#00e676,#00c853);color:#0a1a1a;box-shadow:0 8px 30px -8px rgba(0,230,118,0.4)}
+.bet-btn.up:active{transform:scale(0.97)}
+.bet-btn.down{background:linear-gradient(135deg,#ff1744,#d50000);color:#fff;box-shadow:0 8px 30px -8px rgba(255,23,68,0.4)}
+.bet-btn.down:active{transform:scale(0.97)}
+.bet-btn.disabled{background:rgba(255,255,255,0.06)!important;color:var(--text-muted)!important;box-shadow:none!important;cursor:default;pointer-events:none}
+.bet-btn .arrow{font-size:18px;margin-right:6px}
+
+/* Cash out */
+.cashout-btn{width:100%;padding:18px;border:none;border-radius:16px;font-family:'Inter',sans-serif;font-size:16px;font-weight:700;cursor:pointer;position:relative;z-index:1;transition:all 0.3s ease}
+.cashout-btn.green{background:linear-gradient(135deg,#00e676,#00c853);color:#0a1a1a;box-shadow:0 8px 30px -8px rgba(0,230,118,0.4)}
+.cashout-btn.red{background:linear-gradient(135deg,#ff1744,#d50000);color:#fff;box-shadow:0 8px 30px -8px rgba(255,23,68,0.4)}
+
+/* Result card */
+.result-card{background:var(--card);backdrop-filter:blur(24px);border:1px solid var(--card-border);border-radius:16px;padding:16px 20px;margin:8px 0;text-align:center;position:relative;z-index:1}
+.result-card h3{font-size:18px;font-weight:800;margin-bottom:4px}
+.result-card h3.green{color:var(--green)}
+.result-card h3.red{color:var(--red)}
+.result-card p{font-size:13px;color:var(--text-secondary)}
+.result-checks{display:flex;justify-content:center;gap:16px;margin-top:10px}
+.result-check{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary)}
+.result-check .icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px}
+.result-check .icon.green{background:rgba(0,230,118,0.15);color:var(--green)}
+.result-check .icon.red{background:rgba(255,23,68,0.15);color:var(--red)}
+
+/* Pool stats */
+.pool-stats{display:flex;justify-content:center;gap:24px;padding:8px 0;position:relative;z-index:1}
+.pool-stat{text-align:center}
+.pool-stat .label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;font-weight:600}
+.pool-stat .value{font-size:15px;font-weight:700;margin-top:2px}
+.pool-stat .value.green{color:var(--green)}
+.pool-stat .value.red{color:var(--red)}
+
+/* Bottom schedule */
+.bottom-info{text-align:center;padding:12px 0;margin-top:auto;position:relative;z-index:1}
+.bottom-info p{font-size:12px;color:var(--text-muted);font-weight:500}
+
+/* State switcher (debug) */
+.state-switcher{position:fixed;bottom:0;left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:8px;background:rgba(0,0,0,0.9);border-radius:12px 12px 0 0;z-index:100;backdrop-filter:blur(10px)}
+.state-switcher button{padding:6px 10px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.05);color:#fff;border-radius:8px;font-size:10px;font-family:'Inter',sans-serif;cursor:pointer;font-weight:600;white-space:nowrap}
+.state-switcher button.active{background:rgba(0,230,118,0.2);border-color:var(--green);color:var(--green)}
+
+/* Transitions */
+.fade{transition:opacity 0.4s ease,transform 0.4s ease}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="glow green" id="glow"></div>
+<div class="app" id="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">Up<span>Spy</span><span class="down">Down</span></div>
+    <div class="balance-pill"><div class="dot"></div><span id="balance">124.31 USDC</span></div>
+  </div>
+
+  <!-- Status Badge -->
+  <div class="status-badge">
+    <div class="badge pre" id="badge">
+      <span id="badge-text">Pre-market</span>
+    </div>
+  </div>
+
+  <!-- Chart Card -->
+  <div class="chart-card glow-green" id="chartCard">
+    <div class="chart-header">
+      <div>
+        <div class="chart-symbol">SPY · S&P 500 ETF</div>
+        <div class="chart-price" id="chartPrice">$592.41</div>
+        <div class="chart-change up" id="chartChange">+$2.03 (+0.34%)</div>
+      </div>
+      <div class="chart-timeframe">
+        <span class="active">1D</span>
+        <span>1W</span>
+        <span>1M</span>
+      </div>
+    </div>
+    <canvas id="chart" width="716" height="320"></canvas>
+  </div>
+
+  <!-- Info Section -->
+  <div class="info-section" id="infoSection">
+    <div class="info-text" id="infoText">Betting opens at <strong>9:30am ET</strong></div>
+    <div class="info-sub" id="infoSub"></div>
+  </div>
+
+  <!-- Countdown -->
+  <div class="countdown" id="countdownSection">
+    <div class="countdown-text" id="countdownText">2h 12m</div>
+    <div class="countdown-label">Opens in</div>
+  </div>
+
+  <!-- Pool Stats -->
+  <div class="pool-stats" id="poolStats">
+    <div class="pool-stat"><div class="label">Pool</div><div class="value">$12,480</div></div>
+    <div class="pool-stat"><div class="label">UP</div><div class="value green">62%</div></div>
+    <div class="pool-stat"><div class="label">DOWN</div><div class="value red">38%</div></div>
+    <div class="pool-stat"><div class="label">Players</div><div class="value">847</div></div>
+  </div>
+
+  <!-- Bet Buttons -->
+  <div class="bet-buttons" id="betButtons">
+    <button class="bet-btn up disabled" id="btnUp"><span class="arrow">↑</span> Bet UP</button>
+    <button class="bet-btn down disabled" id="btnDown"><span class="arrow">↓</span> Bet DOWN</button>
+  </div>
+
+  <!-- Cash Out Button (hidden by default) -->
+  <div id="cashoutSection" class="hidden">
+    <button class="cashout-btn green" id="cashoutBtn">Cash out 187.20 USDC</button>
+  </div>
+
+  <!-- Result Card (hidden) -->
+  <div id="resultCard" class="hidden">
+    <div class="result-card">
+      <h3 id="resultTitle" class="green">SPY closed GREEN ✓</h3>
+      <p id="resultSub">Nice call! You won.</p>
+      <div class="result-checks">
+        <div class="result-check"><div class="icon green">✓</div> Market settled</div>
+        <div class="result-check"><div class="icon green">✓</div> Payout ready</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Info -->
+  <div class="bottom-info">
+    <p id="bottomText">Next session: Tomorrow 9:30am ET</p>
+  </div>
+</div>
+
+<!-- State Switcher -->
+<div class="state-switcher" id="switcher">
+  <button data-state="pre-market" class="active">Pre-market</button>
+  <button data-state="live">Live</button>
+  <button data-state="settling">Settling</button>
+  <button data-state="result-green">Result ↑</button>
+  <button data-state="result-red">Result ↓</button>
+</div>
+
+<script>
+// Chart drawing
+function drawChart(color, trend) {
+  const canvas = document.getElementById('chart');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // Generate realistic intraday data
+  const points = [];
+  const numPoints = 195; // ~6.5 hours of minute data
+  let price = 590.38;
+  const trendBias = trend === 'up' ? 0.015 : -0.012;
+
+  for (let i = 0; i < numPoints; i++) {
+    const momentum = trendBias * (1 + Math.sin(i / 30) * 0.5);
+    const volatility = 0.3 + Math.sin(i / 20) * 0.15;
+    price += momentum + (Math.random() - 0.48) * volatility;
+    // Add some realistic patterns
+    if (i === 30) price += trend === 'up' ? 0.8 : -0.6; // morning move
+    if (i === 100) price += trend === 'up' ? -0.3 : 0.2; // midday pullback
+    if (i === 150) price += trend === 'up' ? 0.5 : -0.4; // afternoon push
+    points.push(price);
+  }
+
+  const minP = Math.min(...points) - 0.2;
+  const maxP = Math.max(...points) + 0.2;
+  const openPrice = points[0];
+
+  const xStep = W / (numPoints - 1);
+  const yScale = (H - 40) / (maxP - minP);
+
+  // Open price line
+  const openY = H - 20 - (openPrice - minP) * yScale;
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(0, openY);
+  ctx.lineTo(W, openY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Price line
+  const mainColor = color === 'green' ? '#00e676' : '#ff1744';
+  const gradTop = color === 'green' ? 'rgba(0,230,118,0.15)' : 'rgba(255,23,68,0.12)';
+
+  ctx.beginPath();
+  for (let i = 0; i < points.length; i++) {
+    const x = i * xStep;
+    const y = H - 20 - (points[i] - minP) * yScale;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.strokeStyle = mainColor;
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+
+  // Gradient fill
+  const lastX = (points.length - 1) * xStep;
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, gradTop);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.lineTo(lastX, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Current price dot
+  const lastY = H - 20 - (points[points.length - 1] - minP) * yScale;
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+  ctx.fillStyle = mainColor;
+  ctx.fill();
+  // Glow ring
+  ctx.beginPath();
+  ctx.arc(lastX, lastY, 8, 0, Math.PI * 2);
+  ctx.strokeStyle = mainColor;
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.3;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Time labels
+  ctx.fillStyle = 'rgba(232,245,233,0.2)';
+  ctx.font = '500 18px Inter, sans-serif';
+  const times = ['9:30', '11:00', '12:30', '2:00', '4:00'];
+  times.forEach((t, i) => {
+    ctx.fillText(t, (i / (times.length - 1)) * (W - 40) + 5, H - 2);
+  });
+}
+
+// State management
+const states = {
+  'pre-market': () => {
+    setGlow('green', true);
+    setBadge('pre', 'Pre-market');
+    setChart('green', 'up');
+    setChartCard('glow-green');
+    setPrice('$592.41', '+$2.03 (+0.34%)', 'up');
+    setInfo('Betting opens at <strong>9:30am ET</strong>', '');
+    show('countdownSection'); hide('resultCard'); hide('cashoutSection'); show('betButtons'); show('poolStats');
+    document.getElementById('countdownText').textContent = '2h 12m';
+    setBtns(true, true);
+    setBalance('124.31 USDC');
+    document.getElementById('bottomText').textContent = 'Next session: Tomorrow 9:30am ET';
+  },
+  'live': () => {
+    setGlow('green', false);
+    setBadge('live', '<div class="pulse"></div> LIVE — Betting open');
+    setChart('green', 'up');
+    setChartCard('glow-green');
+    setPrice('$593.18', '+$2.80 (+0.47%)', 'up');
+    setInfo('SPY is <strong>up today (+0.47%)</strong>', 'Ends at market close · 4:00pm ET');
+    hide('countdownSection'); hide('resultCard'); hide('cashoutSection'); show('betButtons'); show('poolStats');
+    setBtns(false, false);
+    setBalance('124.31 USDC');
+    document.getElementById('bottomText').textContent = 'Settle at market close';
+  },
+  'settling': () => {
+    setGlow('green', true);
+    setBadge('settling', '<div class="spinner"></div> Betting closed — settling');
+    setChart('green', 'up');
+    setChartCard('glow-green');
+    setPrice('$592.87', '+$2.49 (+0.42%)', 'up');
+    setInfo('Calculating payouts...', 'Payouts in ~10-20 min');
+    hide('countdownSection'); hide('resultCard'); hide('cashoutSection'); show('betButtons'); show('poolStats');
+    setBtns(true, true);
+    setBalance('124.31 USDC');
+    document.getElementById('bottomText').textContent = 'Market closed';
+  },
+  'result-green': () => {
+    setGlow('green', false);
+    setBadge('result-green', '✓ Settled');
+    setChart('green', 'up');
+    setChartCard('glow-green');
+    setPrice('$593.44', '+$3.06 (+0.52%)', 'up');
+    setInfo('', '');
+    hide('countdownSection'); show('resultCard'); show('cashoutSection'); hide('betButtons'); show('poolStats');
+    document.getElementById('resultTitle').className = 'green';
+    document.getElementById('resultTitle').innerHTML = 'SPY closed GREEN ✓';
+    document.getElementById('resultSub').textContent = 'Nice call! You won.';
+    document.querySelectorAll('.result-check .icon').forEach(el => { el.className = 'icon green'; });
+    document.getElementById('cashoutBtn').className = 'cashout-btn green';
+    document.getElementById('cashoutBtn').textContent = 'Cash out 187.20 USDC';
+    setBalance('124.31 USDC');
+    document.getElementById('bottomText').textContent = 'Betting opens at 9:30am ET';
+  },
+  'result-red': () => {
+    setGlow('red', false);
+    setBadge('result-red', '✓ Settled');
+    setChart('red', 'down');
+    setChartCard('glow-red');
+    setPrice('$588.35', '-$2.03 (-0.34%)', 'down');
+    setInfo('', '');
+    hide('countdownSection'); show('resultCard'); show('cashoutSection'); hide('betButtons'); show('poolStats');
+    document.getElementById('resultTitle').className = 'red';
+    document.getElementById('resultTitle').innerHTML = 'SPY closed RED ✗';
+    document.getElementById('resultSub').textContent = 'Better luck tomorrow!';
+    document.querySelectorAll('.result-check .icon').forEach(el => { el.className = 'icon red'; });
+    document.getElementById('cashoutBtn').className = 'cashout-btn red';
+    document.getElementById('cashoutBtn').textContent = 'Cash out 40.00 USDC';
+    setBalance('40.00 USDC');
+    document.getElementById('bottomText').textContent = 'Betting opens at 9:30am ET';
+  }
+};
+
+function setGlow(color, dim) {
+  const g = document.getElementById('glow');
+  g.className = 'glow ' + color + (dim ? ' dim' : '');
+}
+function setBadge(cls, html) {
+  const b = document.getElementById('badge');
+  b.className = 'badge ' + cls;
+  b.innerHTML = html;
+}
+function setChart(color, trend) { drawChart(color, trend); }
+function setChartCard(cls) {
+  document.getElementById('chartCard').className = 'chart-card ' + cls;
+}
+function setPrice(price, change, dir) {
+  document.getElementById('chartPrice').textContent = price;
+  const c = document.getElementById('chartChange');
+  c.textContent = change;
+  c.className = 'chart-change ' + dir;
+}
+function setInfo(text, sub) {
+  document.getElementById('infoText').innerHTML = text;
+  document.getElementById('infoSub').textContent = sub;
+  document.getElementById('infoSection').style.display = text ? '' : 'none';
+}
+function setBtns(upDis, downDis) {
+  document.getElementById('btnUp').className = 'bet-btn up' + (upDis ? ' disabled' : '');
+  document.getElementById('btnDown').className = 'bet-btn down' + (downDis ? ' disabled' : '');
+}
+function setBalance(t) { document.getElementById('balance').textContent = t; }
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+// Switcher
+document.querySelectorAll('.state-switcher button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.state-switcher button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const state = btn.dataset.state;
+    states[state]();
+  });
+});
+
+// Init
+states['pre-market']();
+</script>
+</body>
+</html>
